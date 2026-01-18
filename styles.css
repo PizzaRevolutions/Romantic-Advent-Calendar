@@ -3,24 +3,28 @@
 
 /* VARIABILI */
 :root {
-    --bg: #ffffff;
+    --bg: #f1f1f1d8;
     --text: #222;
     --accent: #d63f3f;
     --border: #d3d3d3;
     --table-header-bg: #f2f2f2;
     --bg-image: url('images/lightmodebg.png');
     --header-shadow: rgba(0, 0, 0, 0.08);
+    --empty-img: url('images/heresemptylight.png');
+    --box-border: #000200da;
 }
 
 /* DARK MODE */
 .dark-theme {
-    --bg: #1a1a1a;
+    --bg: #1a1a1ae8;
     --text: #f2f2f2;
     --accent: #ff5f5f;
     --border: #555;
     --table-header-bg: #2a2a2a;
     --bg-image: url('images/darkmodebg.png');
     --header-shadow: rgb(255 255 255 / 8%);
+    --empty-img: url('images/heresemptydark.png');
+    --box-border: #d9d8d7ee;
 }
 
 /* RESET */
@@ -147,6 +151,50 @@ body {
 .checkbox:checked+.checkbox-label .ball {
     transform: translateX(24px);
 
+}
+
+
+#main-form {
+    width: 70%;
+    height: 90vh;
+    margin: 0 auto;
+
+}
+
+.container {
+    height: 40%;
+    width: 100%;
+    margin-top: 40px;
+
+}
+
+.san-valentino {
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg);
+    border-radius: 25px;
+    box-shadow: 0 2px 8px rgba(255, 255, 255, 0.062);
+    border: 3px solid var(--box-border);
+}
+
+.pasqua {
+    width: 100%;
+    height: 100%;
+    border-radius: 25px;
+    background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='25' ry='25' stroke='%23000200' stroke-width='5' stroke-dasharray='15%2c 15' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e");
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#empty-image {
+    max-width: 80%;
+    max-height: 80%;
+    content: var(--empty-img);
+}
+
+.dark-theme .pasqua {
+    background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='25' ry='25' stroke='%23D9D8D7' stroke-width='5' stroke-dasharray='15%2c 15' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e");
 }
 
 /* TITOLI */
