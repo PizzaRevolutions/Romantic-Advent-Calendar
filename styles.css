@@ -20,6 +20,7 @@
     --paper-crample: url('images/crample.png');
     --paper-mid: url('images/midcrample.png');
     --paper-opened: url('images/opened.png');
+    --cat-img: url('images/lookinuplight.png');
 }
 
 /* DARK MODE */
@@ -42,6 +43,7 @@
     --paper-crample: url('images/crample.png');
     --paper-mid: url('images/midcrample.png');
     --paper-opened: url('images/opened.png');
+    --cat-img: url('images/lookinuplight.png');
 }
 
 * {
@@ -578,7 +580,10 @@ p {
     flex-direction: column;
     align-items: center;
     margin-top: 30px;
-    margin-bottom: 30px;
+    margin-bottom: 50px;
+    /* Più spazio sotto per il testo */
+    overflow: hidden;
+    /* Taglia il gatto quando scende */
 }
 
 .modal-gift-image {
@@ -591,6 +596,8 @@ p {
     z-index: 2;
     filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.15));
     animation: jumpingGift 3s ease-in-out infinite;
+    animation-delay: 1s;
+    /* Aspetta 1 secondo prima di iniziare la prima volta */
     transform-origin: center center;
     transition: transform 0.3s ease-out, opacity 0.5s ease;
     /* Fluidità nei cambi di stato */
@@ -613,6 +620,7 @@ p {
     z-index: 1;
     opacity: 0;
     animation: fxBlink 3s ease-in-out infinite;
+    animation-delay: 1s;
 }
 
 .vibration-fx.left {
@@ -627,16 +635,38 @@ p {
 }
 
 .gift-shadow {
-    width: 140px;
-    height: 16px;
-    background: var(--gift-shadow-color);
-    border-radius: 50%;
-    filter: blur(6px);
-    margin-top: -30px;
+    position: absolute;
+    width: 250px;
+    height: 250px;
+    background-image: var(--cat-img);
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center bottom;
     z-index: 1;
-    animation: jumpingShadow 3s ease-in-out infinite;
-    transition: background-color 0.5s ease;
-    box-shadow: 0 0 10px var(--gift-shadow-color);
+    bottom: -45%;
+    left: -3%;
+    /* Sarà regolato dall'utente */
+    transition: transform 0.8s cubic-bezier(0.5, 0, 0.5, 1), opacity 0.5s ease;
+    opacity: 0;
+    /* Nascondi il gatto all'inizio, apparirà solo sotto la cartaccia */
+    pointer-events: none;
+}
+
+.gift-shadow.cat-exit {
+    transform: translateY(150px);
+}
+
+.cat-floor {
+    position: absolute;
+    bottom: -60%;
+    left: -50%;
+    width: 200%;
+    height: 100px;
+    background-color: transparent;
+    /* Trasparente come richiesto */
+    z-index: 2;
+    /* Sopra il gatto per nasconderlo */
+    pointer-events: none;
 }
 
 @keyframes fxBlink {

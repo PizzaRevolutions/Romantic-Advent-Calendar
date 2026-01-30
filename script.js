@@ -107,6 +107,7 @@ if (dayBoxes.length > 0 && modal) {
                     <div class="modal-gift-image" id="gift-image"></div>
                     <div class="vibration-fx right"></div>
                     <div class="gift-shadow" id="gift-shadow"></div>
+                    <div class="cat-floor"></div>
                 </div>
                 <div id="gift-message-container">
                     <p id="modal-desc">Apri il regalo per scoprire il contenuto speciale!</p>
@@ -118,11 +119,19 @@ if (dayBoxes.length > 0 && modal) {
 
             // Gestione audio per l'animazione idle (jumpingGift)
             const giftImage = document.getElementById("gift-image");
+
+            // Riproduce il suono al primo avvio (dopo il delay di 1s impostato nei CSS)
+            setTimeout(() => {
+                if (!giftImage.classList.contains('opened') && modal.classList.contains('active')) {
+                    playSfx('shake', 1.2);
+                }
+            }, 1000);
+
             giftImage.addEventListener('animationiteration', (e) => {
                 // Se l'animazione che è appena finita è quella di default (jumpingGift)
                 // e il pacchetto non è ancora stato aperto
                 if (e.animationName === 'jumpingGift' && !giftImage.classList.contains('opened')) {
-                    playSfx('shake', 1.2); // Pitch fisso leggermente più veloce per essere scattante
+                    playSfx('shake', 1.2);
                 }
             });
 
@@ -166,7 +175,7 @@ if (dayBoxes.length > 0 && modal) {
                             giftImage.classList.remove("shaking");
                             giftImage.style.animation = "none";
                             giftImage.classList.add("opened");
-                            giftShadow.style.opacity = "0";
+                            if (giftShadow) giftShadow.style.opacity = "1"; // MOSTRA il gatto solo ora, sotto la cartaccia
                             vibrationFx.forEach(fx => fx.style.display = "none");
 
                             document.getElementById("modal-title").innerText = "Un messaggio per te!";
@@ -180,6 +189,7 @@ if (dayBoxes.length > 0 && modal) {
                             giftImage.addEventListener("click", () => {
                                 if (paperState === 0) {
                                     playSfx('uncrample', 1.1);
+                                    if (giftShadow) giftShadow.classList.add("cat-exit");
                                     giftImage.classList.add("paper-mid");
                                     paperState = 1;
                                 } else if (paperState === 1) {
