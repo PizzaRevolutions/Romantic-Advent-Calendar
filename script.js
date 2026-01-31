@@ -40,24 +40,32 @@ function isDayAvailable(dayNumber) {
 function initializeCalendar() {
     const dayBoxes = document.querySelectorAll(".day-box");
 
-    // Prima controlliamo la struttura del database
-    database.ref('letterine').once('value').then((snapshot) => {
+    // Prima proviamo a leggere dalla radice del database
+    database.ref('/').once('value').then((snapshot) => {
         let data = snapshot.val() || {};
 
-        console.log('[Firebase] Dati grezzi ricevuti:', data);
+        console.log('[Firebase] Dati grezzi dalla radice:', data);
 
-        // Auto-detect: se i dati hanno una sottoproprieta 'letterine', usiamo quella
-        // Questo succede se l'utente importa il JSON con "letterine" già come chiave
-        if (data.letterine && typeof data.letterine === 'object') {
-            console.log('[Firebase] Rilevata struttura annidata letterine/letterine');
-            letterineBasePath = 'letterine/letterine';
-            letterineCache = data.letterine;
-        } else if (data['1'] && data['1'].messaggio) {
-            // Struttura corretta: letterine/1, letterine/2, etc.
-            console.log('[Firebase] Struttura corretta rilevata');
-            letterineBasePath = 'letterine';
+        // Auto-detect della struttura del database
+        // Caso 1: Dati direttamente alla radice (1, 2, 3...)
+        if (data['1'] && data['1'].messaggio) {
+            console.log('[Firebase] Struttura rilevata: dati alla radice');
+            letterineBasePath = ''; // Percorso vuoto = radice
             letterineCache = data;
-        } else {
+        }
+        // Caso 2: Dati sotto 'letterine' (letterine/1, letterine/2...)
+        else if (data.letterine && data.letterine['1'] && data.letterine['1'].messaggio) {
+            console.log('[Firebase] Struttura rilevata: dati sotto /letterine');
+            letterineBasePath = 'letterine';
+            letterineCache = data.letterine;
+        }
+        // Caso 3: Dati sotto 'letterine/letterine' (import errato)
+        else if (data.letterine && data.letterine.letterine) {
+            console.log('[Firebase] Struttura rilevata: dati sotto /letterine/letterine');
+            letterineBasePath = 'letterine/letterine';
+            letterineCache = data.letterine.letterine;
+        }
+        else {
             console.warn('[Firebase] Struttura dati non riconosciuta:', data);
             letterineCache = {};
         }
@@ -195,8 +203,11 @@ if (dayBoxes.length > 0 && modal) {
             const dayNumber = dayText.match(/\d+/)?.[0] || "1";
 
             // Recupera i dati in tempo reale da Firebase
-            // Usa letterineBasePath per gestire sia 'letterine' che 'letterine/letterine'
-            database.ref(`${letterineBasePath}/${dayNumber}`).once('value').then((snapshot) => {
+            // Costruisci il percorso corretto (gestisce radice e sotto-nodi)
+            const dbPath = letterineBasePath ? `${letterineBasePath}/${dayNumber}` : `/${dayNumber}`;
+            console.log(`[Firebase] Recupero dati da: ${dbPath}`);
+
+            database.ref(dbPath).once('value').then((snapshot) => {
                 const letterina = snapshot.val() || { messaggio: "Messaggio non disponibile", aperto: false };
                 const messaggio = letterina.messaggio;
                 const giaAperto = letterina.aperto === true;
@@ -335,7 +346,7 @@ if (dayBoxes.length > 0 && modal) {
                     };
 
                     // PRIMA di startFinalSequence, aggiorna Firebase con aperto: true
-                    database.ref(`${letterineBasePath}/${dayNumber}`).update({ aperto: true }).then(() => {
+                    database.ref(dbPath).update({ aperto: true }).then(() => {
                         console.log(`[Firebase] Aggiornato aperto=true per giorno ${dayNumber}`);
                         // Aggiorna anche la cache locale e la classe sul box
                         if (letterineCache[dayNumber]) {
