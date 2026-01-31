@@ -465,6 +465,47 @@ p {
     color: #fff;
 }
 
+/* Stile per i giorni già aperti */
+.day-box.is-opened {
+    opacity: 0.65;
+    background: linear-gradient(135deg, var(--bg), rgba(0, 128, 0, 0.1));
+    border-color: #4CAF50;
+    position: relative;
+}
+
+.day-box.is-opened::after {
+    content: '\f00c'; /* Font Awesome checkmark */
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 1.2rem;
+    color: #4CAF50;
+    z-index: 5;
+}
+
+.day-box.is-opened i.fa-gift {
+    opacity: 0.15;
+}
+
+.day-box.is-opened:hover {
+    opacity: 0.8;
+}
+
+/* Giorno 14 (speciale) con is-opened */
+.day-big.is-opened {
+    opacity: 0.75;
+    background: linear-gradient(135deg, var(--accent), rgba(0, 128, 0, 0.3));
+}
+
+.day-big.is-opened::after {
+    font-size: 1.8rem;
+    top: 15px;
+    right: 15px;
+    color: #fff;
+}
+
 /* MODAL */
 .modal-overlay {
     position: fixed;

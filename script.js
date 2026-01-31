@@ -1,3 +1,75 @@
+// ========================
+// FIREBASE CONFIGURATION
+// ========================
+const firebaseConfig = {
+    apiKey: "AIzaSyCPIKqcHyAmeRHmgMyYea_2yxRHv7vErxg",
+    authDomain: "romantic-advent-calendar.firebaseapp.com",
+    databaseURL: "https://romantic-advent-calendar-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "romantic-advent-calendar",
+    storageBucket: "romantic-advent-calendar.firebasestorage.app",
+    messagingSenderId: "545121258378",
+    appId: "1:545121258378:web:03f499721afa6dd8805673",
+    measurementId: "G-WW0GL67W09"
+};
+
+// Inizializza Firebase
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
+const letterineRef = database.ref('letterine');
+
+// Cache per i dati delle letterine (evita chiamate ripetute)
+let letterineCache = {};
+
+/**
+ * Verifica se un giorno è disponibile per l'apertura
+ * @param {number} dayNumber - Numero del giorno (1-14)
+ * @returns {boolean} - true se il giorno è sbloccato
+ */
+function isDayAvailable(dayNumber) {
+    const now = new Date();
+    const currentYear = 2026;
+    // Il giorno 1 corrisponde al 1 Febbraio 2026, giorno 14 al 14 Febbraio 2026
+    const unlockDate = new Date(currentYear, 1, dayNumber); // Mese 1 = Febbraio (0-indexed)
+    unlockDate.setHours(0, 0, 0, 0); // Inizio del giorno
+    return now >= unlockDate;
+}
+
+/**
+ * Inizializza il calendario leggendo lo stato dal database
+ */
+function initializeCalendar() {
+    const dayBoxes = document.querySelectorAll(".day-box");
+
+    letterineRef.once('value').then((snapshot) => {
+        letterineCache = snapshot.val() || {};
+
+        dayBoxes.forEach(box => {
+            const dayNumber = box.innerText.trim().split('\n')[0].trim();
+            // Estrai solo il numero (rimuovi eventuali icone)
+            const dayNum = dayNumber.match(/\d+/)?.[0];
+
+            if (dayNum && letterineCache[dayNum]) {
+                if (letterineCache[dayNum].aperto === true) {
+                    box.classList.add('is-opened');
+                }
+            }
+        });
+    }).catch((error) => {
+        console.error("Errore nel caricamento dati Firebase:", error);
+    });
+}
+
+// Inizializza il calendario quando il DOM è pronto
+document.addEventListener('DOMContentLoaded', () => {
+    if (document.querySelectorAll(".day-box").length > 0) {
+        initializeCalendar();
+    }
+});
+
+// ========================
+// END FIREBASE CONFIG
+// ========================
+
 const checkbox = document.getElementById("checkbox");
 
 // SOUND EFFECTS HANDLER
@@ -97,136 +169,178 @@ const modalBody = document.getElementById("modal-body");
 if (dayBoxes.length > 0 && modal) {
     dayBoxes.forEach(box => {
         box.addEventListener("click", () => {
-            const dayNumber = box.innerText;
-            // Qui puoi personalizzare il contenuto del modal in base al giorno
-            modalBody.innerHTML = `
-                <div class="bloom-overlay"></div>
-                <h2 id="modal-title">Giorno ${dayNumber}</h2>
-                <div class="modal-gift-container" id="gift-container">
-                    <div class="vibration-fx left"></div>
-                    <div class="modal-gift-image" id="gift-image"></div>
-                    <div class="vibration-fx right"></div>
-                    <div class="gift-shadow" id="gift-shadow"></div>
-                    <div class="cat-floor"></div>
-                </div>
-                <div id="gift-message-container">
-                    <p id="modal-desc">Apri il regalo per scoprire il contenuto speciale!</p>
-                    <button class="claim-btn" id="claim-button">Riscatta</button>
-                </div>
-            `;
-            modal.classList.add("active");
-            document.body.style.overflow = "hidden"; // Previene lo scroll della pagina
+            const dayText = box.innerText;
+            // Estrai solo il numero del giorno
+            const dayNumber = dayText.match(/\d+/)?.[0] || "1";
 
-            // Gestione audio per l'animazione idle (jumpingGift)
-            const giftImage = document.getElementById("gift-image");
+            // Recupera i dati in tempo reale da Firebase
+            database.ref(`letterine/${dayNumber}`).once('value').then((snapshot) => {
+                const letterina = snapshot.val() || { messaggio: "Messaggio non disponibile", aperto: false };
+                const messaggio = letterina.messaggio;
+                const giaAperto = letterina.aperto === true;
 
-            // Riproduce il suono al primo avvio (dopo il delay di 1s impostato nei CSS)
-            setTimeout(() => {
-                if (!giftImage.classList.contains('opened') && modal.classList.contains('active')) {
-                    playSfx('shake', 1.2);
-                }
-            }, 1000);
+                // Verifica disponibilità data
+                const isAvailable = isDayAvailable(parseInt(dayNumber));
 
-            giftImage.addEventListener('animationiteration', (e) => {
-                // Se l'animazione che è appena finita è quella di default (jumpingGift)
-                // e il pacchetto non è ancora stato aperto
-                if (e.animationName === 'jumpingGift' && !giftImage.classList.contains('opened')) {
-                    playSfx('shake', 1.2);
-                }
-            });
+                // Costruisci il modal
+                modalBody.innerHTML = `
+                    <div class="bloom-overlay"></div>
+                    <h2 id="modal-title">Giorno ${dayNumber}</h2>
+                    <div class="modal-gift-container" id="gift-container">
+                        <div class="vibration-fx left"></div>
+                        <div class="modal-gift-image" id="gift-image"></div>
+                        <div class="vibration-fx right"></div>
+                        <div class="gift-shadow" id="gift-shadow"></div>
+                        <div class="cat-floor"></div>
+                    </div>
+                    <div id="gift-message-container">
+                        <p id="modal-desc">Apri il regalo per scoprire il contenuto speciale!</p>
+                        <button class="claim-btn" id="claim-button">Riscatta</button>
+                    </div>
+                `;
+                modal.classList.add("active");
+                document.body.style.overflow = "hidden";
 
-            // Aggiungi listener per il pulsante "Riscatta"
-            const claimBtn = document.getElementById("claim-button");
-            const giftShadow = document.getElementById("gift-shadow");
-            const bloomOverlay = document.querySelector(".bloom-overlay");
-            const vibrationFx = document.querySelectorAll(".vibration-fx");
+                const giftImage = document.getElementById("gift-image");
+                const claimBtn = document.getElementById("claim-button");
+                const giftShadow = document.getElementById("gift-shadow");
+                const bloomOverlay = document.querySelector(".bloom-overlay");
+                const vibrationFx = document.querySelectorAll(".vibration-fx");
+                const modalDesc = document.getElementById("modal-desc");
 
-            claimBtn.addEventListener("click", () => {
-                if (giftImage.classList.contains("opened") || claimBtn.getAttribute("disabled")) return;
-
-                // Disabilita UI
-                claimBtn.setAttribute("disabled", "true");
-                claimBtn.style.opacity = "0.5";
-                claimBtn.innerText = "Attendi...";
-
-                // Funzione che avvia la sequenza finale
-                const startFinalSequence = () => {
-                    // Reset animazione e stato
+                // === CASO 1: GIÀ APERTO - Salta animazione e mostra messaggio ===
+                if (giaAperto) {
+                    // Imposta lo stato finale direttamente
                     giftImage.style.animation = "none";
-                    giftImage.offsetHeight; // trigger reflow
-
-                    // 1. Nascondi pulsante e messaggio iniziale
+                    giftImage.classList.add("opened", "paper-opened");
+                    vibrationFx.forEach(fx => fx.style.display = "none");
                     claimBtn.style.display = "none";
-                    document.getElementById("modal-desc").style.opacity = "0";
 
-                    // 2. Audio: Scuotimento finale
-                    playSfx('shake', 1.2);
+                    document.getElementById("modal-title").innerText = "Un messaggio per te!";
+                    modalDesc.innerHTML = `<span class="gift-content-text show">${messaggio}</span>`;
+                    modalDesc.classList.add("show");
+                    return; // Esci, nessuna ulteriore logica necessaria
+                }
 
-                    // 3. Avvia Animazione Scuotimento Finale (giftShake)
-                    giftImage.classList.add("shaking");
-                    giftImage.style.animation = "giftShake 0.6s ease-in-out forwards";
+                // === CASO 2: NON DISPONIBILE (data futura) ===
+                if (!isAvailable) {
+                    claimBtn.setAttribute("disabled", "true");
+                    claimBtn.style.opacity = "0.5";
+                    claimBtn.style.cursor = "not-allowed";
+                    claimBtn.innerText = "Non ancora disponibile";
+                    modalDesc.innerHTML = `<p>Questo regalo si sbloccherà il <strong>${dayNumber} Febbraio 2026</strong></p>`;
+                }
 
-                    // Dopo lo scuotimento finale, parte il bianco
+                // === CASO 3: DISPONIBILE E NON APERTO ===
+                // Gestione audio per l'animazione idle (jumpingGift)
+                if (isAvailable && !giaAperto) {
                     setTimeout(() => {
-                        bloomOverlay.classList.add("active");
-                        setTimeout(() => playSfx('open'), 200);
+                        if (!giftImage.classList.contains('opened') && modal.classList.contains('active')) {
+                            playSfx('shake', 1.2);
+                        }
+                    }, 1000);
+
+                    giftImage.addEventListener('animationiteration', (e) => {
+                        if (e.animationName === 'jumpingGift' && !giftImage.classList.contains('opened')) {
+                            playSfx('shake', 1.2);
+                        }
+                    });
+                }
+
+                // Handler per il pulsante Riscatta
+                claimBtn.addEventListener("click", () => {
+                    if (giftImage.classList.contains("opened") || claimBtn.getAttribute("disabled")) return;
+
+                    // Disabilita UI
+                    claimBtn.setAttribute("disabled", "true");
+                    claimBtn.style.opacity = "0.5";
+                    claimBtn.innerText = "Attendi...";
+
+                    // Funzione che avvia la sequenza finale
+                    const startFinalSequence = () => {
+                        giftImage.style.animation = "none";
+                        giftImage.offsetHeight; // trigger reflow
+
+                        claimBtn.style.display = "none";
+                        modalDesc.style.opacity = "0";
+
+                        playSfx('shake', 1.2);
+
+                        giftImage.classList.add("shaking");
+                        giftImage.style.animation = "giftShake 0.6s ease-in-out forwards";
 
                         setTimeout(() => {
-                            giftImage.classList.remove("shaking");
-                            giftImage.style.animation = "none";
-                            giftImage.classList.add("opened");
-                            if (giftShadow) giftShadow.style.opacity = "1"; // MOSTRA il gatto solo ora, sotto la cartaccia
-                            vibrationFx.forEach(fx => fx.style.display = "none");
+                            bloomOverlay.classList.add("active");
+                            setTimeout(() => playSfx('open'), 200);
 
-                            document.getElementById("modal-title").innerText = "Un messaggio per te!";
-                            const modalDesc = document.getElementById("modal-desc");
-                            modalDesc.innerHTML = `<span class="gift-content-text show">Tocca il foglio per aprirlo...</span>`;
-                            modalDesc.style.opacity = "1";
-                            modalDesc.classList.add("show");
+                            setTimeout(() => {
+                                giftImage.classList.remove("shaking");
+                                giftImage.style.animation = "none";
+                                giftImage.classList.add("opened");
+                                if (giftShadow) giftShadow.style.opacity = "1";
+                                vibrationFx.forEach(fx => fx.style.display = "none");
 
-                            // Logica di apertura della carta
-                            let paperState = 0; // 0: crample, 1: mid, 2: opened
-                            giftImage.addEventListener("click", () => {
-                                if (paperState === 0) {
-                                    playSfx('uncrample', 1.1);
-                                    if (giftShadow) giftShadow.classList.add("cat-exit");
-                                    giftImage.classList.add("paper-mid");
-                                    paperState = 1;
-                                } else if (paperState === 1) {
-                                    playSfx('uncrample', 0.9);
-                                    giftImage.classList.add("paper-opened");
-                                    modalDesc.innerHTML = `<span class="gift-content-text show">Hai ricevuto un bacio virtuale e una sorpresa speciale per il giorno ${dayNumber}!</span>`;
-                                    paperState = 2;
-                                }
-                            });
-                        }, 1200);
-                    }, 600);
-                };
+                                document.getElementById("modal-title").innerText = "Un messaggio per te!";
+                                modalDesc.innerHTML = `<span class="gift-content-text show">Tocca il foglio per aprirlo...</span>`;
+                                modalDesc.style.opacity = "1";
+                                modalDesc.classList.add("show");
 
-                // LOGICA DI ATTESA:
-                // Se il regalo è "in aria" o sta scuotendo nell'idle, attendiamo la fine del ciclo
-                // L'animazione jumpingGift dura 3s, con il movimento concentrato all'inizio.
-                // Usiamo un listener temporaneo per aspettare il prossimo 'animationiteration'
+                                // Logica di apertura della carta
+                                let paperState = 0;
+                                giftImage.addEventListener("click", () => {
+                                    if (paperState === 0) {
+                                        playSfx('uncrample', 1.1);
+                                        if (giftShadow) giftShadow.classList.add("cat-exit");
+                                        giftImage.classList.add("paper-mid");
+                                        paperState = 1;
+                                    } else if (paperState === 1) {
+                                        playSfx('uncrample', 0.9);
+                                        giftImage.classList.add("paper-opened");
+                                        // Usa il messaggio dal database
+                                        modalDesc.innerHTML = `<span class="gift-content-text show">${messaggio}</span>`;
+                                        paperState = 2;
+                                    }
+                                });
+                            }, 1200);
+                        }, 600);
+                    };
 
-                const onAnimationFinish = (e) => {
-                    if (e.animationName === 'jumpingGift') {
-                        giftImage.removeEventListener('animationiteration', onAnimationFinish);
-                        startFinalSequence();
-                    }
-                };
+                    // PRIMA di startFinalSequence, aggiorna Firebase con aperto: true
+                    database.ref(`letterine/${dayNumber}`).update({ aperto: true }).then(() => {
+                        // Aggiorna anche la cache locale e la classe sul box
+                        if (letterineCache[dayNumber]) {
+                            letterineCache[dayNumber].aperto = true;
+                        }
+                        box.classList.add('is-opened');
 
-                // Controlliamo se è in pausa (tra i 0.7s e i 3s dell'animazione idle)
-                // Se siamo nella fase statica, possiamo partire quasi subito, 
-                // altrimenti aspettiamo il ciclo. Per semplicità e pulizia, aspettiamo sempre l'iteration.
-                giftImage.addEventListener('animationiteration', onAnimationFinish);
+                        // Ora avvia la sequenza di animazione
+                        const onAnimationFinish = (e) => {
+                            if (e.animationName === 'jumpingGift') {
+                                giftImage.removeEventListener('animationiteration', onAnimationFinish);
+                                startFinalSequence();
+                            }
+                        };
 
-                // Se per qualche motivo non triggherasse (es. browser lag), forziamo dopo max 3.1s
-                setTimeout(() => {
-                    giftImage.removeEventListener('animationiteration', onAnimationFinish);
-                    if (!giftImage.classList.contains("opened") && claimBtn.style.display !== "none") {
-                        startFinalSequence();
-                    }
-                }, 3100);
+                        giftImage.addEventListener('animationiteration', onAnimationFinish);
+
+                        // Fallback se l'animazione non triggera
+                        setTimeout(() => {
+                            giftImage.removeEventListener('animationiteration', onAnimationFinish);
+                            if (!giftImage.classList.contains("opened") && claimBtn.style.display !== "none") {
+                                startFinalSequence();
+                            }
+                        }, 3100);
+                    }).catch((error) => {
+                        console.error("Errore durante l'aggiornamento Firebase:", error);
+                        claimBtn.innerText = "Errore, riprova";
+                        claimBtn.removeAttribute("disabled");
+                        claimBtn.style.opacity = "1";
+                    });
+                });
+            }).catch((error) => {
+                console.error("Errore nel recupero dati Firebase:", error);
+                modalBody.innerHTML = `<p>Errore nel caricamento. Riprova più tardi.</p>`;
+                modal.classList.add("active");
             });
         });
     });
