@@ -32,7 +32,8 @@ const imagesToPreload = [
     'images/stairslight.png',
     'images/stairsdark.png',
     'images/lockedlight.png',
-    'images/lockeddark.png'
+    'images/lockeddark.png',
+    'images/overlay.png'
 ];
 
 function preloadImages() {
@@ -352,6 +353,8 @@ if (dayBoxes.length > 0 && modal) {
                 const vibrationFx = document.querySelectorAll(".vibration-fx");
                 const modalDesc = document.getElementById("modal-desc");
 
+                const placeholderText = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.";
+
                 // === CASO 1: GIÀ APERTO - Salta animazione e mostra messaggio ===
                 if (giaAperto) {
                     // Imposta lo stato finale direttamente
@@ -361,8 +364,33 @@ if (dayBoxes.length > 0 && modal) {
                     claimBtn.style.display = "none";
 
                     document.getElementById("modal-title").innerText = "Un messaggio per te!";
-                    modalDesc.innerHTML = `<span class="gift-content-text show">${messaggio}</span>`;
-                    modalDesc.classList.add("show");
+                    modalDesc.innerHTML = '<p class="hint-text">Clicca sul foglio per scoprire la foto ricordo!</p>';
+
+                    // Inserisce il testo dentro il foglio + OVERLAY
+                    const showText = () => {
+                        giftImage.innerHTML = `
+                            <div class="paper-text-scroll">${placeholderText}</div>
+                            <div class="paper-overlay"></div>
+                        `;
+                    };
+                    const showPhoto = () => {
+                        giftImage.innerHTML = `<img src="images/photos/day${dayNumber}.png" class="paper-photo" alt="Ricordo">`;
+                    };
+
+                    // Mostra testo iniziale
+                    showText();
+
+                    // Toggle Click per girare il foglio
+                    let isPhotoView = false;
+                    giftImage.onclick = (e) => {
+                        // Se l'utente sta selezionando il testo, non girare (opzionale, ma migliora UX)
+                        if (window.getSelection().toString().length > 0) return;
+
+                        isPhotoView = !isPhotoView;
+                        // Simula effetto flip (opzionale, basico scambio contenuto per ora)
+                        if (isPhotoView) showPhoto(); else showText();
+                    };
+
                     return; // Esci, nessuna ulteriore logica necessaria
                 }
 
@@ -478,6 +506,18 @@ if (dayBoxes.length > 0 && modal) {
 
                                 // Logica di apertura della carta
                                 let paperState = 0;
+                                let isPhotoView = false;
+
+                                const showText = () => {
+                                    giftImage.innerHTML = `
+                                        <div class="paper-text-scroll">${placeholderText}</div>
+                                        <div class="paper-overlay"></div>
+                                    `;
+                                };
+                                const showPhoto = () => {
+                                    giftImage.innerHTML = `<img src="images/photos/day${dayNumber}.png" class="paper-photo" alt="Ricordo">`;
+                                };
+
                                 giftImage.addEventListener("click", () => {
                                     if (paperState === 0) {
                                         playSfx('uncrample', 1.1);
@@ -487,9 +527,18 @@ if (dayBoxes.length > 0 && modal) {
                                     } else if (paperState === 1) {
                                         playSfx('uncrample', 0.9);
                                         giftImage.classList.add("paper-opened");
-                                        // Usa il messaggio dal database
-                                        modalDesc.innerHTML = `<span class="gift-content-text show">${messaggio}</span>`;
+                                        // Pulisce il contenitore sotto e mostra hint
+                                        modalDesc.innerHTML = '<p class="hint-text">Clicca sul foglio per scoprire la foto ricordo!</p>';
+
+                                        // Mostra testo
+                                        showText();
+
                                         paperState = 2;
+                                    } else if (paperState === 2) {
+                                        // Flip logic
+                                        if (window.getSelection().toString().length > 0) return;
+                                        isPhotoView = !isPhotoView;
+                                        if (isPhotoView) showPhoto(); else showText();
                                     }
                                 });
                             }, 1200);
