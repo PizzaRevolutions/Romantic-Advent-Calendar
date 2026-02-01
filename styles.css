@@ -43,7 +43,7 @@
     --paper-crample: url('images/crample.png');
     --paper-mid: url('images/midcrample.png');
     --paper-opened: url('images/opened.png');
-    --cat-img: url('images/lookinuplight.png');
+    --cat-img: url('images/lookinupdark.png');
 }
 
 * {
@@ -474,7 +474,8 @@ p {
 }
 
 .day-box.is-opened::after {
-    content: '\f00c'; /* Font Awesome checkmark */
+    content: '\f00c';
+    /* Font Awesome checkmark */
     font-family: 'Font Awesome 6 Free';
     font-weight: 900;
     position: absolute;

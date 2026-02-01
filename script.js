@@ -27,7 +27,8 @@ const imagesToPreload = [
     'images/crample.png',
     'images/midcrample.png',
     'images/opened.png',
-    'images/lookinuplight.png'
+    'images/lookinuplight.png',
+    'images/lookinupdark.png'
 ];
 
 function preloadImages() {
