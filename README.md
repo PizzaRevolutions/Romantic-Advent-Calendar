@@ -7,7 +7,7 @@ Un calendario dell'avvento digitale e interattivo creato appositamente per San V
 -   **📅 Griglia Interattiva**: Un calendario di 14 giorni con pacchetti regalo animati.
 -   **🔒 Sblocco Sequenziale**: I regali si sbloccano giorno dopo giorno. Non è possibile saltare i giorni o aprire regali futuri, garantendo un'esperienza guidata.
 -   **🔥 Integrazione Firebase**: Stato dei regali sincronizzato in tempo reale tramite Firebase Realtime Database. Se un regalo viene riscattato, rimarrà aperto per sempre su qualsiasi dispositivo.
--   **💌 Messaggi e Foto**: Ogni regalo contiene un messaggio scritto a mano (font corsivo) e una "foto ricordo" nascosta sul retro del foglio.
+-   **💌 Messaggi e Foto**: Ogni regalo contiene un messaggio e una "foto ricordo" nascosta sul retro del foglio.
 -   **🌓 Dark & Light Mode**: Supporto completo per il tema chiaro e scuro con transizioni fluide e asset dedicati.
 -   **🎵 Esperienza Multimediale**: Effetti sonori personalizzati (scartamento, apertura, vibrazione) e animazioni premium per ogni interazione.
 -   **📱 Design Responsive**: Ottimizzato per desktop e dispositivi mobile per una consultazione perfetta in ogni momento.
