@@ -28,7 +28,11 @@ const imagesToPreload = [
     'images/midcrample.png',
     'images/opened.png',
     'images/lookinuplight.png',
-    'images/lookinupdark.png'
+    'images/lookinupdark.png',
+    'images/stairslight.png',
+    'images/stairsdark.png',
+    'images/lockedlight.png',
+    'images/lockeddark.png'
 ];
 
 function preloadImages() {
@@ -62,6 +66,23 @@ function isDayAvailable(dayNumber) {
     const unlockDate = new Date(currentYear, 1, dayNumber); // Mese 1 = Febbraio (0-indexed)
     unlockDate.setHours(0, 0, 0, 0); // Inizio del giorno
     return now >= unlockDate;
+}
+
+/**
+ * Trova il primo giorno sbloccato temporalmente ma non ancora riscattato
+ * @returns {number|null} - Numero del giorno o null
+ */
+function getFirstClaimableDay() {
+    for (let i = 1; i <= 14; i++) {
+        const isAvailable = isDayAvailable(i);
+        // Controlliamo la cache (che deve essere popolata)
+        const giaAperto = letterineCache[i] && letterineCache[i].aperto === true;
+
+        if (isAvailable && !giaAperto) {
+            return i;
+        }
+    }
+    return null;
 }
 
 /**
@@ -103,13 +124,31 @@ function initializeCalendar() {
         console.log('[Firebase] letterineCache:', letterineCache);
         console.log('[Firebase] letterineBasePath:', letterineBasePath);
 
-        dayBoxes.forEach(box => {
-            const dayNumber = box.innerText.trim().split('\n')[0].trim();
-            const dayNum = dayNumber.match(/\d+/)?.[0];
+        const firstClaimable = getFirstClaimableDay();
 
-            if (dayNum && letterineCache[dayNum]) {
-                if (letterineCache[dayNum].aperto === true) {
+        dayBoxes.forEach(box => {
+            const dayNumberText = box.innerText.trim().split('\n')[0].trim();
+            const dayNum = parseInt(dayNumberText.match(/\d+/)?.[0]);
+
+            if (dayNum) {
+                // Rimuovi classi per aggiornamento pulito
+                box.classList.remove('is-opened', 'is-claimable');
+                const icon = box.querySelector("i.fa-gift");
+                if (icon) icon.classList.remove("fa-bounce");
+
+                const available = isDayAvailable(dayNum);
+                const giaAperto = letterineCache[dayNum] && letterineCache[dayNum].aperto === true;
+
+                if (giaAperto) {
                     box.classList.add('is-opened');
+                } else if (available) {
+                    // Tutti i giorni sbloccati temporalmente diventano evidenziati col bordo
+                    box.classList.add('is-claimable');
+
+                    // Solo il PRIMO regalo della fila (quello effettivamente riscattabile ora) rimbalza
+                    if (dayNum === firstClaimable && icon) {
+                        icon.classList.add("fa-bounce");
+                    }
                 }
             }
         });
@@ -295,10 +334,52 @@ if (dayBoxes.length > 0 && modal) {
                     claimBtn.innerText = "Non ancora disponibile";
                     modalDesc.innerHTML = `<p>Questo regalo si sbloccherà il <strong>${dayNumber} Febbraio 2026</strong></p>`;
 
+                    // Mostra l'immagine del lucchetto
+                    giftImage.classList.add("locked-mode");
+
                     // Disabilita animazione idle per i giorni non disponibili
                     giftImage.style.animation = "none";
-                    vibrationFx.forEach(fx => fx.style.display = "none");
-                    return; // IMPORTANTE: non permettere ulteriori azioni
+                    if (vibrationFx) vibrationFx.forEach(fx => fx.style.display = "none");
+                    return;
+                }
+
+                // === CASO 2.5: SEQUENZA BLOCCATA (giorni precedenti non riscattati) ===
+                const firstClaimable = getFirstClaimableDay();
+                const currentDayNum = parseInt(dayNumber);
+
+                if (firstClaimable && currentDayNum > firstClaimable) {
+                    claimBtn.setAttribute("disabled", "true");
+                    claimBtn.style.opacity = "0.5";
+                    claimBtn.style.cursor = "not-allowed";
+                    claimBtn.innerText = "Bloccato";
+                    modalDesc.innerHTML = `
+                        <p>Eh no. Devi riscattare i regali in fila!</p>
+                        <button class="skip-to-btn" id="go-to-first">
+                            Vai al regalo da riscattare <i class="fas fa-arrow-right" style="margin-left: 5px;"></i>
+                        </button>
+                    `;
+
+                    // Mostra l'immagine delle scale
+                    giftImage.classList.add("stairs-mode");
+
+                    // Disabilita animazione idle
+                    giftImage.style.animation = "none";
+                    if (vibrationFx) vibrationFx.forEach(fx => fx.style.display = "none");
+
+                    // Handler per il pulsante skip
+                    document.getElementById("go-to-first").onclick = () => {
+                        // Invece di chiudere e riaprire, sovrascriviamo direttamente
+                        const targetBox = Array.from(dayBoxes).find(b => {
+                            const bNum = b.innerText.match(/\d+/)?.[0];
+                            return parseInt(bNum) === firstClaimable;
+                        });
+                        if (targetBox) {
+                            targetBox.click();
+                        } else {
+                            closeModal();
+                        }
+                    };
+                    return;
                 }
 
                 // === CASO 3: DISPONIBILE E NON APERTO ===
@@ -378,11 +459,14 @@ if (dayBoxes.length > 0 && modal) {
                     // PRIMA di startFinalSequence, aggiorna Firebase con aperto: true
                     database.ref(dbPath).update({ aperto: true }).then(() => {
                         console.log(`[Firebase] Aggiornato aperto=true per giorno ${dayNumber}`);
-                        // Aggiorna anche la cache locale e la classe sul box
+
+                        // Aggiorna anche la cache locale
                         if (letterineCache[dayNumber]) {
                             letterineCache[dayNumber].aperto = true;
                         }
-                        box.classList.add('is-opened');
+
+                        // Rinfresca lo stato visivo (es. rimuove is-claimable e aggiunge al prossimo)
+                        initializeCalendar();
 
                         // Ora avvia la sequenza di animazione
                         const onAnimationFinish = (e) => {
@@ -426,10 +510,8 @@ if (dayBoxes.length > 0 && modal) {
             audio.currentTime = 0;
         });
 
-        // Pulisce il contenuto del modal per sicurezza
-        setTimeout(() => {
-            modalBody.innerHTML = "";
-        }, 400);
+        // Pulisce il contenuto del modal immediatamente per evitare conflitti con riaperture veloci
+        modalBody.innerHTML = "";
     };
 
     closeModalBtn.addEventListener("click", closeModal);

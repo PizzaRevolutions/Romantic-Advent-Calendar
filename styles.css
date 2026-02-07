@@ -21,6 +21,8 @@
     --paper-mid: url('images/midcrample.png');
     --paper-opened: url('images/opened.png');
     --cat-img: url('images/lookinuplight.png');
+    --stairs-img: url('images/stairslight.png');
+    --locked-img: url('images/lockedlight.png');
 }
 
 /* DARK MODE */
@@ -44,6 +46,8 @@
     --paper-mid: url('images/midcrample.png');
     --paper-opened: url('images/opened.png');
     --cat-img: url('images/lookinupdark.png');
+    --stairs-img: url('images/stairsdark.png');
+    --locked-img: url('images/lockeddark.png');
 }
 
 * {
@@ -507,6 +511,46 @@ p {
     color: #fff;
 }
 
+/* Giorno riscattabile (bordo nero in light, bianco in dark) */
+.day-box.is-claimable {
+    border-color: #000000 !important;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.15);
+    z-index: 2;
+}
+
+.dark-theme .day-box.is-claimable {
+    border-color: #ffffff !important;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+}
+
+/* Pulsante piccolo per saltare al giorno corretto */
+.skip-to-btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 25px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-top: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 10px rgba(214, 63, 63, 0.3);
+}
+
+.skip-to-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(214, 63, 63, 0.4);
+    filter: brightness(1.1);
+}
+
+.skip-to-btn:active {
+    transform: translateY(0);
+}
+
 /* MODAL */
 .modal-overlay {
     position: fixed;
@@ -629,8 +673,8 @@ p {
 }
 
 .modal-gift-image {
-    width: 250px;
-    height: 250px;
+    width: 320px;
+    height: 320px;
     background-image: var(--gift-img);
     background-size: contain;
     background-repeat: no-repeat;
@@ -645,6 +689,14 @@ p {
     /* Fluidità nei cambi di stato */
 }
 
+.modal-gift-image.stairs-mode {
+    background-image: var(--stairs-img) !important;
+}
+
+.modal-gift-image.locked-mode {
+    background-image: var(--locked-img) !important;
+}
+
 .modal-gift-image.stopping {
     animation-play-state: paused;
 }
@@ -653,8 +705,8 @@ p {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    width: 40px;
-    height: 80px;
+    width: 50px;
+    height: 100px;
     background-image: var(--vibration-fx);
     background-size: contain;
     background-repeat: no-repeat;
@@ -666,20 +718,20 @@ p {
 }
 
 .vibration-fx.left {
-    left: 38px;
+    left: 20px;
     top: 70%;
 }
 
 .vibration-fx.right {
-    right: 38px;
+    right: 20px;
 
     transform: translateY(-50%) scaleX(-1);
 }
 
 .gift-shadow {
     position: absolute;
-    width: 250px;
-    height: 250px;
+    width: 320px;
+    height: 320px;
     background-image: var(--cat-img);
     background-size: contain;
     background-repeat: no-repeat;
@@ -695,7 +747,22 @@ p {
 }
 
 .gift-shadow.cat-exit {
-    transform: translateY(150px);
+    /* Usa l'animazione invece della transition semplice per fare il saltino */
+    animation: catJumpDown 0.7s cubic-bezier(0.5, 0, 0.5, 1) forwards;
+}
+
+@keyframes catJumpDown {
+    0% {
+        transform: translateY(0);
+    }
+
+    30% {
+        transform: translateY(-20px);
+    }
+
+    100% {
+        transform: translateY(200px);
+    }
 }
 
 .cat-floor {
