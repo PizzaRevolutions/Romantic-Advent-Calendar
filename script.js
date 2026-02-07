@@ -157,10 +157,50 @@ function initializeCalendar() {
     });
 }
 
+
+/**
+ * Aggiorna il contatore dei progressi nella home page
+ */
+function updateHomeProgress() {
+    const progressText = document.getElementById("progress-text");
+    if (!progressText) return;
+
+    database.ref('/').once('value').then((snapshot) => {
+        let data = snapshot.val() || {};
+        let count = 0;
+        let letters = {};
+
+        // Stessa logica di rilevamento struttura di initializeCalendar
+        if (data['1'] && data['1'].messaggio) {
+            letters = data;
+        } else if (data.letterine && data.letterine['1'] && data.letterine['1'].messaggio) {
+            letters = data.letterine;
+        } else if (data.letterine && data.letterine.letterine) {
+            letters = data.letterine.letterine;
+        }
+
+        // Conta le letterine aperte da 1 a 14
+        for (let i = 1; i <= 14; i++) {
+            if (letters[i] && letters[i].aperto === true) {
+                count++;
+            }
+        }
+
+        progressText.innerText = `${count}/14 giorni riscattati`;
+    }).catch((error) => {
+        console.error('[Firebase] Errore aggiornamento progressi home:', error);
+    });
+}
+
 // Inizializza il calendario quando il DOM è pronto
 document.addEventListener('DOMContentLoaded', () => {
     if (document.querySelectorAll(".day-box").length > 0) {
         initializeCalendar();
+    }
+
+    // Aggiorna la home se presente
+    if (document.getElementById("progress-text")) {
+        updateHomeProgress();
     }
 });
 
